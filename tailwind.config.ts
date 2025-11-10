@@ -57,6 +57,17 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        "user-message": {
+          bg: "hsl(var(--user-message-bg))",
+          text: "hsl(var(--user-message-text))",
+        },
+        "ai-message": {
+          bg: "hsl(var(--ai-message-bg))",
+          text: "hsl(var(--ai-message-text))",
+        },
+      },
+      fontFamily: {
+        poppins: ["Poppins", "sans-serif"],
       },
       borderRadius: {
         lg: "var(--radius)",
