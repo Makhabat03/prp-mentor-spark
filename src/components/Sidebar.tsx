@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { FileText, Wrench, Info, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface SidebarProps {
   isCollapsed: boolean;
 }
 
 const Sidebar = ({ isCollapsed }: SidebarProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>("services");
   const [expandedSection, setExpandedSection] = useState<string | null>("services");
 
@@ -51,8 +54,15 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
             <div key={tab.id}>
               <button
                 onClick={() => {
-                  setActiveTab(tab.id);
-                  setExpandedSection(isExpanded ? null : tab.id);
+                  if (tab.id === "about") {
+                    navigate("/about");
+                  } else {
+                    if (location.pathname !== "/") {
+                      navigate("/");
+                    }
+                    setActiveTab(tab.id);
+                    setExpandedSection(isExpanded ? null : tab.id);
+                  }
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 transition-smooth hover:bg-[hsl(var(--sidebar-accent))]",
