@@ -12,11 +12,36 @@ interface Message {
   content: string;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: number;
+}
+
 const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => {
+    const saved = localStorage.getItem("prp-chat-sessions");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentChatId, setCurrentChatId] = useState<string>(() => {
+    const saved = localStorage.getItem("prp-current-chat-id");
+    return saved || "";
+  });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showWidgets, setShowWidgets] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const currentChat = chatSessions.find(chat => chat.id === currentChatId);
+  const messages = currentChat?.messages || [];
+
+  useEffect(() => {
+    localStorage.setItem("prp-chat-sessions", JSON.stringify(chatSessions));
+  }, [chatSessions]);
+
+  useEffect(() => {
+    localStorage.setItem("prp-current-chat-id", currentChatId);
+  }, [currentChatId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -26,26 +51,65 @@ const Index = () => {
     scrollToBottom();
   }, [messages]);
 
+  const createNewChat = () => {
+    const newChatId = `chat-${Date.now()}`;
+    const newChat: ChatSession = {
+      id: newChatId,
+      title: "New Chat",
+      messages: [],
+      createdAt: Date.now(),
+    };
+    setChatSessions(prev => [newChat, ...prev]);
+    setCurrentChatId(newChatId);
+  };
+
+  const selectChat = (chatId: string) => {
+    setCurrentChatId(chatId);
+  };
+
   const handleSendMessage = (content: string) => {
-    // Add user message
-    setMessages((prev) => [...prev, { role: "user", content }]);
+    if (!currentChatId) {
+      createNewChat();
+      return;
+    }
+
+    const userMessage: Message = { role: "user", content };
+    
+    setChatSessions(prev => prev.map(chat => {
+      if (chat.id === currentChatId) {
+        const updatedMessages = [...chat.messages, userMessage];
+        const newTitle = chat.messages.length === 0 ? content.slice(0, 30) + (content.length > 30 ? "..." : "") : chat.title;
+        return { ...chat, messages: updatedMessages, title: newTitle };
+      }
+      return chat;
+    }));
 
     // Simulate AI response
     setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "Hello! I'm the PRP AI Agent. I'm here to help you with all your Professional Readiness Program questions. You can ask me about badges, events, attendance, quizzes, and track your progress. How can I assist you today?",
-        },
-      ]);
+      const aiMessage: Message = {
+        role: "assistant",
+        content: "Hello! I'm the PRP AI Agent. I'm here to help you with all your Professional Readiness Program questions. You can ask me about badges, events, attendance, quizzes, and track your progress. How can I assist you today?",
+      };
+      
+      setChatSessions(prev => prev.map(chat => {
+        if (chat.id === currentChatId) {
+          return { ...chat, messages: [...chat.messages, aiMessage] };
+        }
+        return chat;
+      }));
     }, 1000);
   };
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar */}
-      <Sidebar isCollapsed={isSidebarCollapsed} />
+      <Sidebar 
+        isCollapsed={isSidebarCollapsed}
+        onNewChat={createNewChat}
+        chatHistory={chatSessions.map(chat => ({ id: chat.id, title: chat.title }))}
+        onSelectChat={selectChat}
+        currentChatId={currentChatId}
+      />
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">

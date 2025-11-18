@@ -1,19 +1,25 @@
 import { useState } from "react";
-import { FileText, Wrench, Info, ChevronRight } from "lucide-react";
+import { FileText, Wrench, Info, ChevronRight, MessageSquarePlus, History } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 
 interface SidebarProps {
   isCollapsed: boolean;
+  onNewChat?: () => void;
+  chatHistory?: Array<{ id: string; title: string }>;
+  onSelectChat?: (chatId: string) => void;
+  currentChatId?: string;
 }
 
-const Sidebar = ({ isCollapsed }: SidebarProps) => {
+const Sidebar = ({ isCollapsed, onNewChat, chatHistory = [], onSelectChat, currentChatId }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<string>("services");
   const [expandedSection, setExpandedSection] = useState<string | null>("services");
 
   const tabs = [
+    { id: "new-chat", label: "New Chat", icon: MessageSquarePlus, action: onNewChat },
+    { id: "history", label: "History", icon: History },
     { id: "docs", label: "Docs", icon: FileText },
     { id: "services", label: "Services", icon: Wrench },
     { id: "about", label: "About Project", icon: Info },
@@ -54,7 +60,9 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
             <div key={tab.id}>
               <button
                 onClick={() => {
-                  if (tab.id === "about") {
+                  if (tab.id === "new-chat" && tab.action) {
+                    tab.action();
+                  } else if (tab.id === "about") {
                     navigate("/about");
                   } else {
                     if (location.pathname !== "/") {
@@ -96,6 +104,32 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
                   </>
                 )}
               </button>
+
+              {/* Expandable section for History */}
+              {tab.id === "history" && isExpanded && !isCollapsed && (
+                <div className="bg-[hsl(var(--card))] border-l-2 border-[hsl(var(--sidebar-primary))] ml-4 max-h-64 overflow-y-auto">
+                  {chatHistory.length === 0 ? (
+                    <div className="px-6 py-2 text-sm text-[hsl(var(--muted-foreground))] italic">
+                      No chat history yet
+                    </div>
+                  ) : (
+                    chatHistory.map((chat) => (
+                      <button
+                        key={chat.id}
+                        onClick={() => onSelectChat?.(chat.id)}
+                        className={cn(
+                          "w-full text-left px-6 py-2 text-sm transition-smooth truncate",
+                          currentChatId === chat.id
+                            ? "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))]"
+                            : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                        )}
+                      >
+                        {chat.title}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
 
               {/* Expandable section for Services */}
               {tab.id === "services" && isExpanded && !isCollapsed && (
